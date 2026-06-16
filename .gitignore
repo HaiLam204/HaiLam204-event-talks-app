@@ -1,3 +1,5 @@
+# Gitignore merged from remote template and python template
+
 # Prerequisites
 *.d
 
@@ -22,7 +24,6 @@
 *.dylib
 *.dll
 *.so.*
-
 
 # Fortran module files
 *.mod
@@ -67,3 +68,33 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment files
+.env
+.flaskenv
+.venv
+venv/
+env/
+ENV/
+
+# Project caches
+feed_cache.json
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini

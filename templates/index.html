@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Pulse - Track & Share BQ Updates</title>
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Stay up to date with the latest BigQuery release notes. Track new features, deprecations, resolved issues, and share them directly to X (Twitter).">
+    <meta name="keywords" content="BigQuery, Release Notes, Google Cloud, Data Warehouse, Database, X, Twitter, Developer Tools">
+    
+    <!-- Google Fonts: Outfit and Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <!-- Background Elements for Premium Glassmorphism Design -->
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+    <div class="bg-grid"></div>
+
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="app-header">
+            <div class="header-logo">
+                <div class="logo-icon">
+                    <i data-lucide="database" class="icon-pulse"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>BigQuery <span>Release Pulse</span></h1>
+                    <p>Track, analyze, and share Google Cloud BigQuery updates</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div id="connection-status" class="status-badge live">
+                    <span class="status-dot"></span>
+                    <span class="status-label">Live Feed</span>
+                </div>
+                
+                <button id="refresh-btn" class="btn btn-secondary" title="Refresh Release Notes">
+                    <i data-lucide="refresh-cw" id="refresh-icon"></i>
+                    <span>Refresh</span>
+                </button>
+                
+                <button id="theme-toggle" class="btn btn-icon" title="Toggle Dark/Light Mode">
+                    <i data-lucide="sun" class="sun-icon"></i>
+                    <i data-lucide="moon" class="moon-icon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Overview Row -->
+        <section class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon feature"><i data-lucide="sparkles"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-features">-</span>
+                    <span class="stat-label">Features</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon issue"><i data-lucide="alert-circle"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-issues">-</span>
+                    <span class="stat-label">Issues & Fixes</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon deprecation"><i data-lucide="trash-2"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-deprecations">-</span>
+                    <span class="stat-label">Deprecations</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon total"><i data-lucide="list-filter"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-total">-</span>
+                    <span class="stat-label">Total Updates</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search and Filter Panel -->
+        <section class="controls-panel">
+            <div class="search-box">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="search-input" placeholder="Search release notes (e.g. Gemini, external tables, SQL)..." autocomplete="off">
+                <button id="clear-search-btn" class="clear-btn" style="display: none;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div class="filters-row">
+                <div class="category-filters" id="category-filters-container">
+                    <!-- Categories will be generated dynamically -->
+                    <button class="filter-pill active" data-category="all">
+                        All Updates
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Timeline & Feed Section -->
+        <main class="feed-layout">
+            <div class="timeline-container" id="timeline-container">
+                <!-- Skeleton Loading State -->
+                <div class="skeleton-container" id="skeleton-loader">
+                    <div class="skeleton-date-header"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-date-header"></div>
+                    <div class="skeleton-card"></div>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <div class="empty-icon">
+                        <i data-lucide="search-code"></i>
+                    </div>
+                    <h3>No release notes match your query</h3>
+                    <p>Try refining your search terms or selecting a different category filter.</p>
+                    <button id="reset-filters-btn" class="btn btn-primary">Reset Filters</button>
+                </div>
+
+                <!-- Error State -->
+                <div class="error-state" id="error-state" style="display: none;">
+                    <div class="error-icon">
+                        <i data-lucide="wifi-off"></i>
+                    </div>
+                    <h3>Failed to load release notes</h3>
+                    <p id="error-message">Could not fetch the feed. Please check your internet connection or try again.</p>
+                    <button id="retry-btn" class="btn btn-primary">
+                        <i data-lucide="refresh-cw"></i> Retry Connection
+                    </button>
+                </div>
+
+                <!-- Dynamic Release Feed -->
+                <div id="release-feed" class="release-feed">
+                    <!-- Dynamically populated by JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Selection Action Bar -->
+    <div class="floating-selection-bar" id="selection-bar">
+        <div class="selection-info">
+            <span class="selection-count" id="selection-count">0</span>
+            <span class="selection-text">updates selected</span>
+        </div>
+        <div class="selection-actions">
+            <button id="btn-tweet-digest" class="btn btn-primary btn-tweet">
+                <svg viewBox="0 0 24 24" class="x-logo-svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                <span>Tweet Digest</span>
+            </button>
+            <button id="btn-clear-selection" class="btn btn-ghost">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <!-- Tweet Composer Modal -->
+    <div class="modal-backdrop" id="tweet-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i data-lucide="send"></i>
+                    <h3>Compose Tweet</h3>
+                </div>
+                <button class="btn-icon" id="close-modal-btn">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="tweet-card-preview">
+                    <div class="tweet-user">
+                        <div class="tweet-avatar">
+                            <i data-lucide="user"></i>
+                        </div>
+                        <div class="tweet-user-details">
+                            <span class="tweet-name">You</span>
+                            <span class="tweet-handle">@developer</span>
+                        </div>
+                        <div class="tweet-brand">
+                            <svg viewBox="0 0 24 24" class="x-logo-svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        </div>
+                    </div>
+                    
+                    <div class="tweet-editor-container">
+                        <textarea id="tweet-textarea" rows="6" placeholder="What's happening?"></textarea>
+                    </div>
+                    
+                    <div class="tweet-footer">
+                        <div class="tweet-counter" id="tweet-counter">
+                            <span id="char-count">0</span> / 280
+                        </div>
+                        <div class="tweet-warning" id="tweet-warning-msg" style="display: none;">
+                            <i data-lucide="alert-triangle"></i> Over 280 limit! Will open edit window.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="copy-tweet-btn">
+                    <i data-lucide="copy"></i> Copy Content
+                </button>
+                <button class="btn btn-primary btn-tweet" id="publish-tweet-btn">
+                    <svg viewBox="0 0 24 24" class="x-logo-svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    <span>Post to X</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Main JS Application Code -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
