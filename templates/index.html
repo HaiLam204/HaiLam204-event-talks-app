@@ -54,10 +54,14 @@
                     <span>Export CSV</span>
                 </button>
                 
-                <button id="theme-toggle" class="btn btn-icon" title="Toggle Dark/Light Mode">
-                    <i data-lucide="sun" class="sun-icon"></i>
-                    <i data-lucide="moon" class="moon-icon"></i>
-                </button>
+                <div class="theme-switch-wrapper" title="Toggle Dark/Light Mode">
+                    <i data-lucide="moon" class="switch-icon moon active"></i>
+                    <label class="theme-switch" for="checkbox-theme">
+                        <input type="checkbox" id="checkbox-theme" />
+                        <div class="slider round"></div>
+                    </label>
+                    <i data-lucide="sun" class="switch-icon sun"></i>
+                </div>
             </div>
         </header>
 

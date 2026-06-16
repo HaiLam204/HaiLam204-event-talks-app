@@ -14,7 +14,7 @@ const elements = {
     refreshBtn: document.getElementById('refresh-btn'),
     refreshIcon: document.getElementById('refresh-icon'),
     exportCsvBtn: document.getElementById('export-csv-btn'),
-    themeToggle: document.getElementById('theme-toggle'),
+    themeCheckbox: document.getElementById('checkbox-theme'),
     connectionStatus: document.getElementById('connection-status'),
     searchInput: document.getElementById('search-input'),
     clearSearchBtn: document.getElementById('clear-search-btn'),
@@ -71,12 +71,42 @@ function initTheme() {
     }
     
     document.documentElement.setAttribute("data-theme", state.theme);
+    
+    // Sync checkbox state
+    if (elements.themeCheckbox) {
+        elements.themeCheckbox.checked = state.theme === "light";
+    }
+    updateThemeIcons();
 }
 
-function toggleTheme() {
-    state.theme = state.theme === "dark" ? "light" : "dark";
+function toggleTheme(e) {
+    if (e && e.target && e.target.type === 'checkbox') {
+        state.theme = e.target.checked ? "light" : "dark";
+    } else {
+        state.theme = state.theme === "dark" ? "light" : "dark";
+    }
+    
     document.documentElement.setAttribute("data-theme", state.theme);
     localStorage.setItem("theme", state.theme);
+    
+    if (elements.themeCheckbox) {
+        elements.themeCheckbox.checked = state.theme === "light";
+    }
+    updateThemeIcons();
+}
+
+function updateThemeIcons() {
+    const moon = document.querySelector('.switch-icon.moon');
+    const sun = document.querySelector('.switch-icon.sun');
+    if (moon && sun) {
+        if (state.theme === "dark") {
+            moon.classList.add("active");
+            sun.classList.remove("active");
+        } else {
+            moon.classList.remove("active");
+            sun.classList.add("active");
+        }
+    }
 }
 
 // Toast Notifications
@@ -503,8 +533,10 @@ function compileDigestTweet() {
 
 // Set up event listeners
 function setupEventListeners() {
-    // Theme toggle
-    elements.themeToggle.addEventListener("click", toggleTheme);
+    // Theme toggle checkbox
+    if (elements.themeCheckbox) {
+        elements.themeCheckbox.addEventListener("change", toggleTheme);
+    }
     
     // Export CSV Button
     elements.exportCsvBtn.addEventListener("click", exportToCSV);
