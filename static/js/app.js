@@ -447,9 +447,21 @@ function bindFeedEvents() {
             const item = state.releases.find(r => r.id === id);
             
             if (item) {
+                const copyBtn = e.currentTarget;
+                const originalHTML = copyBtn.innerHTML;
+                
                 navigator.clipboard.writeText(item.tweet_text)
                     .then(() => {
                         showToast("Update copied to clipboard!", "success");
+                        copyBtn.innerHTML = `<i data-lucide="check"></i><span>Copied!</span>`;
+                        copyBtn.classList.add('copy-success');
+                        lucide.createIcons();
+                        
+                        setTimeout(() => {
+                            copyBtn.innerHTML = originalHTML;
+                            copyBtn.classList.remove('copy-success');
+                            lucide.createIcons();
+                        }, 1500);
                     })
                     .catch(err => {
                         console.error("Copy failed:", err);
