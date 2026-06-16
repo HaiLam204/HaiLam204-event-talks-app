@@ -13,6 +13,7 @@ const state = {
 const elements = {
     refreshBtn: document.getElementById('refresh-btn'),
     refreshIcon: document.getElementById('refresh-icon'),
+    exportCsvBtn: document.getElementById('export-csv-btn'),
     themeToggle: document.getElementById('theme-toggle'),
     connectionStatus: document.getElementById('connection-status'),
     searchInput: document.getElementById('search-input'),
@@ -254,17 +255,12 @@ function renderCategoryFilters() {
     });
 }
 
-// Filter and Render Feed
-function renderFeed() {
-    elements.releaseFeed.style.display = "block";
-    elements.emptyState.style.display = "none";
-    elements.errorState.style.display = "none";
-    
-    // 1. Filter releases
+// Get currently filtered release items
+function getFilteredReleases() {
     const searchLower = state.filters.search.toLowerCase().trim();
     const activeCategory = state.filters.category;
     
-    const filtered = state.releases.filter(item => {
+    return state.releases.filter(item => {
         // Category check
         if (activeCategory !== "all" && item.category !== activeCategory) {
             return false;
@@ -272,15 +268,25 @@ function renderFeed() {
         
         // Search check
         if (searchLower) {
-            const matchesSearch = 
+            return (
                 item.date.toLowerCase().includes(searchLower) ||
                 item.category.toLowerCase().includes(searchLower) ||
-                item.content_text.toLowerCase().includes(searchLower);
-            return matchesSearch;
+                item.content_text.toLowerCase().includes(searchLower)
+            );
         }
         
         return true;
     });
+}
+
+// Filter and Render Feed
+function renderFeed() {
+    elements.releaseFeed.style.display = "block";
+    elements.emptyState.style.display = "none";
+    elements.errorState.style.display = "none";
+    
+    // 1. Filter releases
+    const filtered = getFilteredReleases();
     
     // 2. Empty state check
     if (filtered.length === 0) {
@@ -335,6 +341,10 @@ function renderFeed() {
                     </div>
                     
                     <div class="release-card-footer">
+                        <button class="btn btn-secondary copy-card-btn" data-id="${item.id}" title="Copy to Clipboard">
+                            <i data-lucide="copy"></i>
+                            <span>Copy</span>
+                        </button>
                         <button class="btn btn-secondary btn-tweet share-card-btn" data-id="${item.id}">
                             <svg viewBox="0 0 24 24" class="x-logo-svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                             <span>Share Update</span>
@@ -395,6 +405,26 @@ function bindFeedEvents() {
             
             if (item) {
                 openTweetComposer(item.tweet_text);
+            }
+        });
+    });
+    
+    // Individual Copy button clicked
+    elements.releaseFeed.querySelectorAll(".copy-card-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const id = e.currentTarget.getAttribute("data-id");
+            const item = state.releases.find(r => r.id === id);
+            
+            if (item) {
+                navigator.clipboard.writeText(item.tweet_text)
+                    .then(() => {
+                        showToast("Update copied to clipboard!", "success");
+                    })
+                    .catch(err => {
+                        console.error("Copy failed:", err);
+                        showToast("Failed to copy update.", "error");
+                    });
             }
         });
     });
@@ -475,6 +505,9 @@ function compileDigestTweet() {
 function setupEventListeners() {
     // Theme toggle
     elements.themeToggle.addEventListener("click", toggleTheme);
+    
+    // Export CSV Button
+    elements.exportCsvBtn.addEventListener("click", exportToCSV);
     
     // Refresh Button
     elements.refreshBtn.addEventListener("click", () => {
@@ -576,4 +609,45 @@ function setupEventListeners() {
         closeTweetComposer();
         showToast("Opened X / Twitter web intent window!", "success");
     });
+}
+
+// Export filtered release notes to a CSV file
+function exportToCSV() {
+    const filtered = getFilteredReleases();
+    if (filtered.length === 0) {
+        showToast("No release notes to export.", "error");
+        return;
+    }
+    
+    // CSV headers
+    const headers = ["Date", "Category", "Content (Text)", "Link"];
+    
+    // Construct rows. We escape double quotes inside text fields by doubling them.
+    const csvRows = filtered.map(item => {
+        const date = item.date.replace(/"/g, '""');
+        const category = item.category.replace(/"/g, '""');
+        const text = item.content_text.replace(/"/g, '""');
+        const link = item.link.replace(/"/g, '""');
+        return `"${date}","${category}","${text}","${link}"`;
+    });
+    
+    // Add UTF-8 BOM so Excel opens it with correct formatting
+    const csvContent = "\uFEFF" + headers.join(",") + "\n" + csvRows.join("\n");
+    
+    try {
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `bigquery_release_notes_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showToast(`Successfully exported ${filtered.length} updates to CSV!`, "success");
+    } catch (error) {
+        console.error("Export CSV failed:", error);
+        showToast("Failed to export to CSV.", "error");
+    }
 }
